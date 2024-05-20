@@ -1,4 +1,4 @@
-package hasanalmunawr.Dev.SpringBootRedis;
+package hasanalmunawr.Dev.SpringBootRedis.learn;
 
 
 import lombok.AllArgsConstructor;

@@ -1,5 +1,6 @@
-package hasanalmunawr.Dev.SpringBootRedis;
+package hasanalmunawr.Dev.SpringBootRedis.learn;
 
+import hasanalmunawr.Dev.SpringBootRedis.learn.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.stream.StreamListener;

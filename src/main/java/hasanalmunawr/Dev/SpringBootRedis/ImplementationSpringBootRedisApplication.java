@@ -1,5 +1,8 @@
 package hasanalmunawr.Dev.SpringBootRedis;
 
+import hasanalmunawr.Dev.SpringBootRedis.learn.CustomerListener;
+import hasanalmunawr.Dev.SpringBootRedis.learn.Order;
+import hasanalmunawr.Dev.SpringBootRedis.learn.OrderListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -15,7 +18,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
-import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -38,11 +40,19 @@ public class ImplementationSpringBootRedisApplication {
 
 
 	@Bean
+	public RedisMessageListenerContainer messageListenerContainer(RedisConnectionFactory connectionFactory,
+																  CustomerListener customerListener){
+		var container = new RedisMessageListenerContainer();
+		container.setConnectionFactory(connectionFactory);
+		container.addMessageListener(customerListener, new ChannelTopic("customers"));
+		return container;
+	}
+	@Bean
 	public Subscription orderSubscription(StreamMessageListenerContainer<String, ObjectRecord<String, Order>> orderContainer,
 										  OrderListener orderListener){
-		try{
+		try {
 			redisTemplate.opsForStream().createGroup("orders", "my-group");
-		}catch (Throwable throwable){
+		} catch (Throwable throwable){
 
 		}
 
