@@ -14,8 +14,8 @@ public class CustomerPublisher {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    @Scheduled(fixedRate = 10L, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     public void publish() {
-        redisTemplate.convertAndSend("custom", "hasan" + UUID.randomUUID().toString());
+        redisTemplate.convertAndSend("customers", "hasan" + UUID.randomUUID().toString());
     }
 }

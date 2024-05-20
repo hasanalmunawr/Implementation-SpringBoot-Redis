@@ -1,5 +1,7 @@
 package hasanalmunawr.Dev.SpringBootRedis;
 
+import hasanalmunawr.Dev.SpringBootRedis.learn.Product;
+import hasanalmunawr.Dev.SpringBootRedis.learn.ProductRepository;
 import io.lettuce.core.api.sync.RedisGeoCommands;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,23 +18,29 @@ import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.domain.geo.GeoLocation;
+import org.springframework.data.redis.support.collections.DefaultRedisMap;
+import org.springframework.data.redis.support.collections.RedisList;
+import org.springframework.data.redis.support.collections.RedisSet;
+import org.springframework.data.redis.support.collections.RedisZSet;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.not;
 import static org.assertj.core.api.FactoryBasedNavigableListAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class StringTest {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Test
     void redisTemplate() {
@@ -226,6 +234,92 @@ public class StringTest {
         for (int i = 0; i < 10; i++) {
             redisTemplate.convertAndSend("my-chanel", "hello-world : " + i);
         }
+    }
+
+//    COLLECTIOIN
+    @Test
+    void redisList() {
+        List<String> list = RedisList.create("names", redisTemplate);
+        list.add("hasan");
+        list.add("almunawar");
+
+        List<String> result = redisTemplate.opsForList().range("names", 0, -1);
+//        assertThat(result, hasItems("hasan", "almunawar"));
+    }
+
+    @Test
+    void redisSet() {
+        Set<String> set = RedisSet.create("traffic", redisTemplate);
+        set.addAll(Set.of("hasan", "almunawar"));
+        set.addAll(Set.of("Budi", "nugraha"));
+        set.addAll(Set.of("joko", "muh", "rully"));
+//        assertThat(set, hasItems("hasan", "almunawar", "budi", "rully", "joko"));
+
+        Set<String> members = redisTemplate.opsForSet().members("traffic");
+//        assertThat(members, hasItems("almunawar", "hasan", "budi", "rully", "joko"));
+    }
+
+    @Test
+    void redisZSet() {
+        RedisZSet<String> set = RedisZSet.create("winner", redisTemplate);
+        set.add("Hasan", 100);
+        set.add("Budi", 89);
+        set.add("Eko", 99);
+
+        Set<String> winner = redisTemplate.opsForZSet().range("winner", 0, -1);
+//        assertEquals("Budi", set.popFirst());
+//        assertEquals("Eko", set.popFirst());
+//        assertEquals("Hasan", set.popFirst());
+
+        assertEquals("Hasan", set.popLast());
+        assertEquals("Eko", set.popLast());
+        assertEquals("Budi", set.popLast());
+    }
+
+    @Test
+    void redisMap() {
+        Map<String, String> map = new DefaultRedisMap<>("user1", redisTemplate);
+        map.put("name", "hasan");
+        map.put("address", "jambi");
+
+        Map<Object, Object> entries = redisTemplate.opsForHash().entries("user1");
+        assertEquals("hasan", entries.get("name"));
+        assertEquals("jambi", entries.get("address"));
+    }
+
+    @Test
+    void repository() {
+        Product product = Product.builder()
+                .id("1")
+                .name("Indomie")
+                .price(2_500L)
+                .build();
+        productRepository.save(product);
+
+        Map<Object, Object> map = redisTemplate.opsForHash().entries("products:1");
+        assertEquals(product.getId(), map.get("id"));
+        assertEquals(product.getName(), map.get("name"));
+        assertEquals(product.getPrice().toString(), map.get("price"));
+
+        Product product1 = productRepository.findById("1").get();
+        assertEquals(product1, product);
+    }
+
+//    Time to Live
+    @Test
+    void ttl() throws InterruptedException {
+        Product product = Product.builder()
+                .id("1")
+                .name("Mie Ayam")
+                .price(10_000L)
+                .ttl(3L)
+                .build();
+        productRepository.save(product);
+
+        assertTrue(productRepository.existsById("1"));
+        Thread.sleep(5000L);
+
+        assertFalse(productRepository.existsById("1"));
     }
 }
 
